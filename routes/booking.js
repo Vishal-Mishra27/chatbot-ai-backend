@@ -152,8 +152,8 @@ router.post("/verify-and-place", async (req, res) => {
       {
         headers: {
           "x-api-version": "2023-08-01",
-          "x-client-id": "TEST10256948ec57a943389eb31e588f84965201",
-          "x-client-secret": "cfsk_ma_test_4bf75f253a8b0b51dd9252a617bec825_4076da95",
+          "x-client-id": process.env.CASHFREE_CLIENT_ID,
+          "x-client-secret": process.env.CASHFREE_CLIENT_SECRET,
         },
       }
     );
