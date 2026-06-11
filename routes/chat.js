@@ -41,7 +41,10 @@ router.post("/", async (req, res) => {
   try {
     // 1. Intent detection
     const intentRes = await aiCall(intentPrompt, message);
-    const intent = JSON.parse(intentRes.data.choices[0].message.content).intent;
+    const raw = intentRes.data.choices[0].message.content;
+    const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+    if (!jsonMatch) throw new Error("Intent parse failed");
+    const intent = JSON.parse(jsonMatch[0]).intent;
     console.log("Detected intent:", intent);
 
     let finalPrompt = "";
