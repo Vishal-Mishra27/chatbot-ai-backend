@@ -9,17 +9,25 @@ Classify the user message into one of these intents:
 
 1. profile → user info, wallet, balance, account
 2. orders → booking, hotel, reservation, history
-3. general → greetings or unrelated
+3. book_hotel → user wants to book a specific hotel with dates
+4. general → greetings or unrelated
 
 Rules:
 - Return ONLY JSON
 - No explanation
+
+For book_hotel intent, extract hotel name and dates:
+{ "intent": "book_hotel", "hotelName": "Hotel Name", "checkIn": "YYYY-MM-DD", "checkOut": "YYYY-MM-DD" }
+
+For others:
+{ "intent": "profile" }
 
 Format:
 { "intent": "profile" }
 
 Examples:
 "Mera balance kitna hai?" → { "intent": "profile" }
+"Misiri hotel mein 12 june se 15 june booking karo" → { "intent": "book_hotel", "hotelName": "Misiri", "checkIn": "2026-06-12", "checkOut": "2026-06-15" }
 "Maine kaunse hotel book kiye?" → { "intent": "orders" }
 "Hello" → { "intent": "general" }`;
 
@@ -44,7 +52,10 @@ router.post("/", async (req, res) => {
     const raw = intentRes.data.choices[0].message.content;
     const jsonMatch = raw.match(/\{[\s\S]*?\}/);
     if (!jsonMatch) throw new Error("Intent parse failed");
-    const intent = JSON.parse(jsonMatch[0]).intent;
+    const parsed = JSON.parse(jsonMatch[0]);
+    const intent = parsed.intent;
+    console.log("Detected intent:", intent, "| Parsed:", parsed);
+    // const intent = JSON.parse(jsonMatch[0]).intent;
     console.log("Detected intent:", intent);
 
     let finalPrompt = "";
@@ -114,6 +125,29 @@ Rules:
 - Mention hotel name + amount
 - Keep response short
 - Do not show raw JSON`;
+    }
+
+    if (intent === "book_hotel") {
+      // Profile se naam fetch karo
+      let guestName = "";
+      try {
+        const { data: profileData } = await axios.get(
+          `https://root.roombookkro.com/api/profile/${userId}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        guestName = profileData?.profile?.username || "";
+      } catch {
+        guestName = "";
+      }
+
+      // JSON directly return karo — frontend handle karega
+      return res.json({
+        intent: "book_hotel",
+        hotelName: parsed.hotelName,
+        checkIn: parsed.checkIn,
+        checkOut: parsed.checkOut,
+        guestName,
+      });
     }
 
     if (intent === "general") {
